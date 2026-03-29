@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viriathus Slide AI (Portfolio Demo)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="slide-ai.css">
+    <style id="dynamic-col-styles"></style>
+</head>
+<body>
+
+<!-- PORTFOLIO DEMO BANNER -->
+<div class="demo-banner">⚡ PORTFOLIO DEMO — MOCK DATA, NO REAL SLIDES CREATED ⚡</div>
+
+<canvas id="network-canvas"></canvas>
+<div class="vignette-overlay"></div>
+<div class="loader-line" id="loader"></div>
+
+<div id="filterPopup" class="filter-popup" style="display:none;">
+<div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:5px;">Filter by values</div>
+<div id="filterList" class="filter-list">Loading...</div>
+<div class="filter-actions">
+<button class="filter-btn-sm" onclick="applyFilter(true)">Select All</button>
+<button class="filter-btn-sm" onclick="applyFilter(false)">Clear</button>
+<button class="btn btn-neon" style="width:auto; padding: 4px 10px; height:auto; font-size:0.7rem;" onclick="confirmFilter()">Apply</button>
+</div>
+</div>
+
+<div id="inspectorModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<div style="font-weight:700; color:var(--primary-accent); letter-spacing:1px;">DATA INSPECTOR</div>
+<div style="cursor:pointer; opacity:0.7;" onclick="closeModal('inspectorModal')">✕ ESC</div>
+</div>
+<div id="inspectorContent" class="modal-content"></div>
+<div style="padding:20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border-color);">
+<button class="btn btn-ghost" style="width:auto" onclick="copyModalContent()">Copy Text</button>
+<button class="btn btn-neon" style="width:auto" onclick="closeModal('inspectorModal')">Close</button>
+</div>
+</div>
+</div>
+
+<div id="columnModal" class="modal-overlay">
+<div class="modal-box" style="width: 600px; height: 60vh;">
+<div class="modal-header">
+<div style="font-weight:700; color:var(--primary-accent); letter-spacing:1px;">MANAGE COLUMNS</div>
+<div style="cursor:pointer; opacity:0.7;" onclick="closeModal('columnModal')">✕ ESC</div>
+</div>
+<div class="modal-content" style="background: rgba(0,0,0,0.2);">
+<div style="margin-bottom: 15px; display:flex; gap:10px;">
+<button class="btn btn-ghost" style="padding:6px 12px; width:auto; font-size:0.7rem;" onclick="toggleAllColumns(true)">Select All</button>
+<button class="btn btn-ghost" style="padding:6px 12px; width:auto; font-size:0.7rem;" onclick="toggleAllColumns(false)">Deselect All</button>
+</div>
+<div id="colManagerList" class="col-manager-grid"></div>
+</div>
+<div style="padding:20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border-color);">
+<button class="btn btn-neon" style="width:auto" onclick="closeModal('columnModal')">Done</button>
+</div>
+</div>
+</div>
+
+<div id="settingsModal" class="modal-overlay">
+<div class="modal-box" style="width: 900px; max-width: 95vw; height: 85vh;">
+<div class="modal-header">
+<div style="font-weight:700; color:var(--primary-accent); letter-spacing:1px;">SETTINGS & TEMPLATES</div>
+<div style="cursor:pointer; opacity:0.7;" onclick="closeModal('settingsModal')">✕ ESC</div>
+</div>
+<div class="modal-content" style="background: rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 24px; padding: 30px;">
+<div class="settings-card" style="border-color:#38bdf8;">
+<div style="display:flex; justify-content:space-between; align-items:center;">
+<h3 style="color:#38bdf8; margin:0; padding:0; border:none;">🗄️ HISTORICAL BUGS DATABASE (MULTI-WORKFLOW)</h3>
+<a href="#" id="dbLinkBtn" target="_blank" style="display:none; color:#38bdf8; text-decoration:none; font-size:0.8rem; font-weight:bold;">OPEN SPREADSHEET ↗</a>
+</div>
+<p style="font-size:0.8rem; color:var(--text-muted); margin-top:5px; margin-bottom:15px;">Extract ALL emails (Category A, Policy B, Workspace D, etc) and save them to the permanent Spreadsheet. Enable Auto-Sync to update it automatically in the background.</p>
+<div style="display:flex; align-items:center; gap:15px; margin-bottom:10px;">
+<button id="startSyncBtn" class="btn btn-ghost" style="width:auto; color:#38bdf8; border-color:#38bdf8;" onclick="startDbSync()">START GLOBAL SYNC</button>
+<button id="autoSyncBtn" class="btn btn-ghost" style="width:auto; font-size:0.75rem; padding:10px 15px; transition:0.3s;" onclick="toggleAutoSyncUI()">
+⏳ CHECKING STATUS...
+</button>
+</div>
+<div>
+<span id="syncStatus" style="font-family:var(--font-code); font-size:0.8rem; color:#e2e8f0;">Database ready.</span>
+</div>
+</div>
+
+<div class="settings-card" style="background: rgba(220, 210, 166, 0.05); border-color: var(--primary-accent);">
+<h3 style="margin-bottom: 10px;">⚙️ SELECT WORKFLOW TO CONFIGURE</h3>
+<p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:15px;">Select the Workflow for which you want to set the Quality and PKT Template IDs.</p>
+<select id="settingsWorkflowSelect" class="glass-input" onchange="loadSettingsForWorkflow()" style="margin-bottom:0; font-weight:bold; color:var(--primary-accent);">
+<option value="Category A">🛡️ Category A</option>
+<option value="Policy B">🔞 Policy B</option>
+<option value="Standard C">⚖️ Standard C</option>
+<option value="Workspace D">💼 Workspace D</option>
+<option value="Urgent E">⚠️ Urgent E</option>
+<option value="AI Mode">🤖 AI Mode</option>
+<option value="System F">🧙‍♂️ System F</option> 
+</select>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+<div class="settings-card">
+<h3>QUALITY PRESET</h3>
+<label>Template Slide URL or ID</label>
+<input type="text" id="set-qual-tmpl" class="glass-input" placeholder="Paste full URL or ID">
+<label>Destination Deck URL or ID</label>
+<input type="text" id="set-qual-dest" class="glass-input" placeholder="Paste full URL or ID" style="margin-bottom:0;">
+</div>
+<div class="settings-card">
+<h3>PKT PRESET</h3>
+<label>Template Slide URL or ID</label>
+<input type="text" id="set-pkt-tmpl" class="glass-input" placeholder="Paste full URL or ID">
+<label>Destination Deck URL or ID</label>
+<input type="text" id="set-pkt-dest" class="glass-input" placeholder="Paste full URL or ID" style="margin-bottom:0;">
+</div>
+</div>
+<div class="legend-card">
+<h4 style="margin-top:0; margin-bottom: 10px; color:var(--primary-accent); display:flex; align-items:center; gap:8px; font-size: 1.1rem;">
+<svg viewBox="0 0 24 24" fill="currentColor" width="22px" height="22px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+How to configure your Slide Templates
+</h4>
+<div class="legend-grid">
+<div class="legend-item"><span class="placeholder-tag">{{DATE}}</span><span class="placeholder-desc">Date selected in UI</span></div>
+<div class="legend-item"><span class="placeholder-tag">{{SLIDE_NUM}}</span><span class="placeholder-desc">Current slide number</span></div>
+<div class="legend-item"><span class="placeholder-tag">{{USER}}</span><span class="placeholder-desc">Data from "User Context"</span></div>
+<div class="legend-item"><span class="placeholder-tag">{{BOT}}</span><span class="placeholder-desc">Data from "Bot Output"</span></div>
+<div class="legend-item" style="grid-column: 1 / -1;"><span class="placeholder-tag">{{EXPLANATION}}</span><span class="placeholder-desc">Data from "Logic/Expl" mapping</span></div>
+</div>
+</div>
+</div>
+<div style="padding:20px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--border-color);">
+<button class="btn btn-ghost" style="width:auto" onclick="resetSettings()">Restore Defaults</button>
+<button class="btn btn-neon" style="width:auto" onclick="saveSettings()">Save Configuration</button>
+</div>
+</div>
+</div>
+
+<div class="bento-container">
+<div class="header-area">
+<div class="logo-container">
+<img src="https://i.postimg.cc/nLxkRVJp/preview.png" alt="Viriathus Logo" class="logo-img">
+<div class="logo-text">VIRIATHUS <span class="logo-highlight">SLIDE AI</span></div>
+</div>
+<div class="header-actions">
+<select id="workflowFilter" class="workflow-select" onchange="onWorkflowFilterChange()">
+<option value="ALL">🌐 All Workflows</option>
+<option value="Category A" selected>🛡️ Category A</option>
+<option value="Policy B">🔞 Policy B</option>
+<option value="Standard C">⚖️ Standard C</option>
+<option value="Workspace D">💼 Workspace D</option>
+<option value="Urgent E">⚠️ Urgent E</option>
+<option value="AI Mode">🤖 AI Mode</option>
+<option value="System F">🧙‍♂️ System F</option> </select>
+<div class="search-wrapper">
+<span class="search-icon">🔍</span>
+<input type="text" id="globalSearch" class="search-input" placeholder="Search across all sheets (Press Enter)..." onkeydown="handleSearch(event)">
+</div>
+<div class="settings-btn rotate" onclick="openSettings()" title="Settings & Templates">
+<svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="presets">
+<div class="preset-item active" onclick="setPreset('quality', event)">Quality</div>
+<div class="preset-item" onclick="setPreset('pkt', event)">PKT</div>
+</div>
+<input type="hidden" id="templateId"><input type="hidden" id="destId">
+
+<label>Source Spreadsheet (URL or ID)</label>
+<div style="display:flex; gap:8px; margin-bottom:20px;">
+<input type="text" id="sourceId" class="glass-input" value="mock_spreadsheet_db_id" style="margin-bottom:0;" placeholder="Paste Google Sheet URL or ID">
+<button class="btn btn-neon" style="width:50px;" onclick="connectSheet()" title="Connect & Extract">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24px" height="24px" style="color: #000;">
+<path d="M21 6.375c0 2.692-4.03 4.875-9 4.875S3 9.067 3 6.375 7.03 1.5 12 1.5s9 2.183 9 4.875Z" />
+<path d="M12 12.75c2.685 0 5.19-.586 7.078-1.609a8.283 8.283 0 0 0 1.897-1.384c.016.121.025.244.025.368C21 12.817 16.97 15 12 15s-9-2.183-9-4.875c0-.124.009-.247.025-.368.618.665 1.341 1.205 2.103 1.609.13.064.263.125.399.183.176.055.353.108.531.156A15.82 15.82 0 0 0 12 12.75Z" />
+<path d="M12 16.5c2.685 0 5.19-.586 7.078-1.609a8.283 8.283 0 0 0 1.897-1.384c.016.121.025.244.025.368 0 2.692-4.03 4.875-9 4.875s-9-2.183-9-4.875c0-.124.009-.247.025-.368.618.665 1.341 1.205 2.103 1.609.13.064.263.125.399.183.176.055.353.108.531.156A15.82 15.82 0 0 0 12 16.5Z" />
+</svg>
+</button>
+</div>
+
+<div id="configArea" style="display:none;">
+<label>Active Worksheet</label>
+<select id="tabSelect" class="glass-input" onchange="onTabChange(true)"></select>
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+<div>
+<label>Header Row</label>
+<input type="number" id="headerRow" class="glass-input" value="1" min="1" onchange="onHeaderRowChange()">
+</div>
+<div>
+<label>Action</label>
+<button class="btn btn-ghost" onclick="fetchHeaders(true)">Refetch</button>
+</div>
+</div>
+
+<div style="margin:15px 0; height:1px; background:var(--border-color);"></div>
+<label>Data Mapping</label>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+<div><label style="font-size:0.6rem">User Context</label><select class="glass-input col-map" data-field="user" onchange="onMappingChange()"></select></div>
+<div><label style="font-size:0.6rem">Bot Output</label><select class="glass-input col-map" data-field="bot" onchange="onMappingChange()"></select></div>
+<div><label style="font-size:0.6rem">Logic/Expl</label><select class="glass-input col-map" data-field="explanation" onchange="onMappingChange()"></select></div>
+<div><label style="font-size:0.6rem">Notes</label><select class="glass-input col-map" data-field="description" onchange="onMappingChange()"></select></div>
+</div>
+</div>
+</div>
+
+<div class="card table-wrapper">
+<div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+<div style="font-size:0.8rem; font-weight:700; letter-spacing:1px;">LIVE DATA (Hyper-Reactive Mode)</div>
+<div style="display:flex; align-items:center; gap:15px;">
+<span id="tableInfo" style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-code);">Waiting...</span>
+<div style="display:flex; gap:8px;">
+<button class="btn btn-ghost" style="padding:8px 12px;" onclick="openColumnManager()">COLUMNS</button>
+<button class="btn btn-ghost" style="padding:8px 15px;" onclick="changePage(-1)">PREV</button>
+<button class="btn btn-ghost" style="padding:8px 15px;" onclick="changePage(1)">NEXT</button>
+<button class="btn btn-neon" style="padding:8px 15px;" onclick="forceRefresh()">REFRESH</button>
+</div>
+</div>
+</div>
+<div class="table-scroll">
+<table id="mainTable">
+<thead><tr id="tHead"><th>Waiting for connection...</th></tr></thead>
+<tbody id="tBody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div style="display:flex; gap:15px; margin-bottom:20px;">
+<div style="flex:1">
+<label>Status</label>
+<input type="text" id="rowDisp" class="glass-input" readonly style="color:var(--primary-accent); font-weight:700; text-align:center;">
+</div>
+<div style="flex:2">
+<label>Slide Date</label>
+<input type="date" id="slideDate" class="glass-input">
+</div>
+</div>
+
+<div id="cartView" style="display:none; flex-grow:1; overflow-y:auto; margin-bottom:20px; border:1px solid var(--border-color); border-radius:12px; padding:10px; background:rgba(0,0,0,0.2);">
+<label style="position:sticky; top:0; background:#1b1e2b; z-index:10; padding-bottom:5px;">Staged Slides</label>
+<div id="cartList"></div>
+</div>
+
+<div id="editInputs">
+<label>User Prompt</label>
+<textarea id="val-user" class="glass-input preview-box"></textarea>
+<label>Bot Response</label>
+<textarea id="val-bot" class="glass-input preview-box"></textarea>
+<label>Logic / Explanation</label>
+<textarea id="val-explanation" class="glass-input preview-box"></textarea>
+<label>Additional Notes</label>
+<textarea id="val-description" class="glass-input preview-box"></textarea>
+</div>
+
+<div style="margin-top:auto; padding-top:20px;">
+<div id="actionButtonsNormal" style="display:flex; gap:10px; margin-bottom:10px;">
+<button id="addManualBtn" class="btn btn-ghost" onclick="addCurrentToBatch()">+ ADD TO BATCH</button>
+<button id="clearBtn" class="btn btn-ghost" style="display:none;" onclick="clearCart()">CLEAR ALL</button>
+<button id="genBtn" class="btn btn-neon" style="height:50px; font-size:0.9rem; flex-grow:1;" onclick="generate()">GENERATE</button>
+</div>
+<div id="actionButtonsEdit" style="display:none; gap:10px; margin-bottom:10px;">
+<button class="btn btn-ghost" style="height:50px; flex:1;" onclick="cancelCartItemEdit()">CANCEL</button>
+<button class="btn btn-neon" style="height:50px; flex:2;" onclick="saveCartItemEdit()">SAVE CHANGES</button>
+</div>
+<div id="status" style="text-align:center; font-size:0.7rem; color:var(--text-muted);">Ready to process</div>
+</div>
+</div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script src="slide-ai.js"></script>
+</body>
+</html>
